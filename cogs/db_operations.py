@@ -4,11 +4,21 @@ from discord.ext import commands
 import datetime
 from dotenv import load_dotenv
 from discord import app_commands
+from pathlib import Path
 
-load_dotenv()
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# Reemplazar la codificación incorrecta
+SUPABASE_URL = SUPABASE_URL.replace('\\x3a', ':')  # Reemplaza '\\x3a' por ':'
+
+# Verifica que la URL esté correctamente cargada
+print("Revisando la URL real:")
+print(repr(SUPABASE_URL))
+
 
 class DBOperations(commands.Cog):
     def __init__(self, bot):

@@ -11,6 +11,8 @@ load_dotenv()
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
+SUPABASE_URL = SUPABASE_URL.replace('\\x3a', ':')  # Reemplaza '\\x3a' por ':'
+
 
 class TicketSystem(commands.Cog):
     def __init__(self, bot):
