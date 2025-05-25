@@ -108,6 +108,9 @@ class TicketSystem(commands.Cog):
 
     @discord.ui.button(label="Crear Ticket", style=discord.ButtonStyle.green)
     async def create_ticket_button(self, interaction: discord.Interaction, button_obj: Button):
+        # Defiere la respuesta para evitar que Discord cancele la interacción
+        await interaction.response.defer(ephemeral=True)
+        
         # Crea un ticket cuando se presiona el botón
         user_id = interaction.user.id
         guild_id = interaction.guild.id
@@ -115,29 +118,35 @@ class TicketSystem(commands.Cog):
 
         ticket = await self.create_ticket(user_id, guild_id, channel_id)
         if ticket:
-            await interaction.response.send_message(f"¡Ticket creado! Canal: {ticket['channel'].mention}", ephemeral=True)
+            await interaction.followup.send(f"¡Ticket creado! Canal: {ticket['channel'].mention}", ephemeral=True)
         else:
-            await interaction.response.send_message("Hubo un error al crear el ticket.", ephemeral=True)
+            await interaction.followup.send("Hubo un error al crear el ticket.", ephemeral=True)
 
     @discord.ui.button(label="Cerrar Ticket", style=discord.ButtonStyle.danger)
     async def close_ticket_button(self, interaction: discord.Interaction, button_obj: Button):
+        # Defiere la respuesta para evitar que Discord cancele la interacción
+        await interaction.response.defer(ephemeral=True)
+        
         # Cierra el ticket cuando se presiona el botón
         channel_id = interaction.channel.id
         ticket_id = await self.close_ticket(channel_id)
         if ticket_id:
-            await interaction.response.send_message(f"Ticket cerrado. ID del ticket: {ticket_id}", ephemeral=True)
+            await interaction.followup.send(f"Ticket cerrado. ID del ticket: {ticket_id}", ephemeral=True)
         else:
-            await interaction.response.send_message("No se encontró un ticket asociado a este canal.", ephemeral=True)
+            await interaction.followup.send("No se encontró un ticket asociado a este canal.", ephemeral=True)
 
     @discord.ui.button(label="Llamar a Staff", style=discord.ButtonStyle.secondary)
     async def call_staff_button(self, interaction: discord.Interaction, button_obj: Button):
+        # Defiere la respuesta para evitar que Discord cancele la interacción
+        await interaction.response.defer(ephemeral=True)
+        
         # Llamar a un miembro del staff (puedes agregar funcionalidades adicionales aquí)
         staff_members = await self.get_support_members(interaction.guild.id)
         if staff_members:
             staff_list = [staff.mention for staff in staff_members]
-            await interaction.response.send_message(f"Miembros de soporte: {', '.join(staff_list)}", ephemeral=True)
+            await interaction.followup.send(f"Miembros de soporte: {', '.join(staff_list)}", ephemeral=True)
         else:
-            await interaction.response.send_message("No se encontraron miembros de soporte.", ephemeral=True)
+            await interaction.followup.send("No se encontraron miembros de soporte.", ephemeral=True)
 
     async def get_support_members(self, guild_id):
         # Obtén los miembros con rol de soporte

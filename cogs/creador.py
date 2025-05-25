@@ -1,4 +1,7 @@
 import discord
+import psutil
+import platform
+import datetime
 from discord.ext import commands
 import os
 import sys
@@ -6,12 +9,21 @@ import sys
 class CreadorCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.start_time = datetime.datetime.utcnow()
+
+    def get_uptime(self):
+        now = datetime.datetime.utcnow()
+        uptime = now - self.start_time
+        days, seconds = uptime.days, uptime.seconds
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{days}d {hours}h {minutes}m"
 
     @commands.command(name="ping")
     async def ping(self, ctx):
         latency = round(self.bot.latency * 1000)
-    
-        # Determinamos el rango del ping para agregar el mensaje adecuado
+
+        # Estado según latencia
         if latency < 100:
             status = "✅ ¡Excelente! El bot responde rápidamente."
         elif latency < 200:
@@ -21,24 +33,49 @@ class CreadorCommands(commands.Cog):
         else:
             status = "🚨 ¡Alto! El bot está experimentando mucha latencia."
 
-        # Creamos el embed con el estado del ping
-        embed = discord.Embed(
-            title="Pong! 🏓", 
-            description=f"Latencia: {latency}ms\n{status}",
-            color=discord.Color.green()
-        )
-    
-        await ctx.send(embed=embed)
+        # Info del sistema
+        cpu_usage = psutil.cpu_percent()
+        ram_usage = psutil.virtual_memory().percent
+        uptime = self.get_uptime()
+        system = platform.system()
+        time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        embed = discord.Embed(
+            title="🏓 Pong!",
+            description=status,
+            color=discord.Color.blurple()
+        )
+        embed.add_field(name="📨 Latencia", value=f"`{latency} ms`", inline=True)
+        embed.add_field(name="🧠 CPU", value=f"`{cpu_usage}%`", inline=True)
+        embed.add_field(name="💾 RAM", value=f"`{ram_usage}%`", inline=True)
+        embed.add_field(name="⏱️ Uptime", value=f"`{uptime}`", inline=True)
+        embed.add_field(name="🖥️ Sistema", value=f"`{system}`", inline=True)
+        embed.set_footer(text=f"🕒 {time_now}")
+
+        await ctx.send(embed=embed)
 
     @commands.command(name="apagar")
     async def shutdown(self, ctx):
-        if ctx.author.id == 737389521049616552:  # Reemplaza con tu ID de usuario
-            embed = discord.Embed(title="Apagando el Bot", description="El bot se está apagando de forma segura...", color=discord.Color.orange())
+        if ctx.author.id == 737389521049616552:  # Tu ID de usuario
+            # Establecer el tipo de apagado como automático
+            global shutdown_type
+            shutdown_type = "auto"
+
+            embed = discord.Embed(
+                title="🔌 Apagando el Bot",
+                description="El bot se está apagando de forma segura...",
+                color=discord.Color.orange()
+            )
+            embed.set_footer(text=f"Solicitado por {ctx.author}", icon_url=ctx.author.display_avatar.url)
+
             await ctx.send(embed=embed)
             await self.bot.close()
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(
+                title="⛔ Permisos Denegados",
+                description="No tienes permisos para usar este comando.",
+                color=discord.Color.red()
+            )
             await ctx.send(embed=embed)
 
     @commands.command(name="cargar")
@@ -46,19 +83,19 @@ class CreadorCommands(commands.Cog):
         if ctx.author.id == 737389521049616552:  # Reemplaza con tu ID de usuario
             try:
                 await self.bot.reload_extension(f"cogs.{cog}")
-                embed = discord.Embed(title="Recarga de Extensión", description=f"La extensión `cogs.{cog}` ha sido recargada exitosamente.", color=discord.Color.green())
+                embed = discord.Embed(title="✅Recarga de Extensión", description=f"La extensión `cogs.{cog}` ha sido recargada exitosamente.", color=discord.Color.green())
                 await ctx.send(embed=embed)
             except commands.ExtensionNotLoaded:
-                embed = discord.Embed(title="Error al Recargar", description=f"La extensión `cogs.{cog}` no está cargada.", color=discord.Color.red())
+                embed = discord.Embed(title="🛑Error al Recargar", description=f"La extensión `cogs.{cog}` no está cargada.", color=discord.Color.red())
                 await ctx.send(embed=embed)
             except commands.ExtensionNotFound:
-                embed = discord.Embed(title="Error al Recargar", description=f"No se encontró la extensión `cogs.{cog}`.", color=discord.Color.red())
+                embed = discord.Embed(title="🛑Error al Recargar", description=f"No se encontró la extensión `cogs.{cog}`.", color=discord.Color.red())
                 await ctx.send(embed=embed)
             except Exception as e:
-                embed = discord.Embed(title="Error al Recargar", description=f"Ocurrió un error al recargar `cogs.{cog}`:\n```{e}```", color=discord.Color.red())
+                embed = discord.Embed(title="🛑Error al Recargar", description=f"Ocurrió un error al recargar `cogs.{cog}`:\n```{e}```", color=discord.Color.red())
                 await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="eval")
@@ -72,7 +109,7 @@ class CreadorCommands(commands.Cog):
                 embed = discord.Embed(title="Error en la Evaluación", description=f"```{e}```", color=discord.Color.red())
                 await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="sync")
@@ -82,7 +119,7 @@ class CreadorCommands(commands.Cog):
             embed = discord.Embed(title="Sincronización de Comandos", description=f"Se han sincronizado {len(synced)} comandos de aplicación globalmente.", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="info_bot")
@@ -95,7 +132,7 @@ class CreadorCommands(commands.Cog):
             embed.add_field(name="Servidores", value=f"{servers} servidores", inline=False)
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="dase_datos")
@@ -104,7 +141,7 @@ class CreadorCommands(commands.Cog):
             embed = discord.Embed(title="Estado de la Base de Datos", description="Estado de la base de datos: OK.", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="mensaje_all")
@@ -121,7 +158,7 @@ class CreadorCommands(commands.Cog):
             embed = discord.Embed(title="Broadcast Enviado", description="Mensaje enviado a todos los servidores.", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="serverlist")
@@ -131,7 +168,7 @@ class CreadorCommands(commands.Cog):
             embed = discord.Embed(title="Lista de Servidores", description=f"```\n{server_info}\n```", color=discord.Color.gold())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="exec")
@@ -141,19 +178,44 @@ class CreadorCommands(commands.Cog):
             embed = discord.Embed(title="Comando Ejecutado", description=f"Comando `{command}` ejecutado.", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="setstatus")
-    async def set_status(self, ctx, status_type: str, *, message: str):
-        if ctx.author.id == 737389521049616552:  # Reemplaza con tu ID de usuario
-            status = discord.Status.online if status_type == "online" else discord.Status.idle
-            await self.bot.change_presence(status=status, activity=discord.Game(name=message))
-            embed = discord.Embed(title="Estado del Bot Cambiado", description=f"Estado cambiado a {status_type}: {message}", color=discord.Color.blue())
-            await ctx.send(embed=embed)
+    async def set_status(self, ctx, status_type: str, activity_type: str, *, message: str):
+        if ctx.author.id == 737389521049616552:
+            status_map = {
+                "online": discord.Status.online,
+                "idle": discord.Status.idle,
+                "dnd": discord.Status.dnd,
+                "offline": discord.Status.offline
+            }
+            activity_type_map = {
+                "playing": lambda msg: discord.Game(name=msg),
+                "streaming": lambda msg: discord.Streaming(name=msg, url="https://twitch.tv/tu_canal"),
+                "listening": lambda msg: discord.Activity(type=discord.ActivityType.listening, name=msg),
+                "watching": lambda msg: discord.Activity(type=discord.ActivityType.watching, name=msg),
+                "competing": lambda msg: discord.Activity(type=discord.ActivityType.competing, name=msg),
+            }
+
+            status = status_map.get(status_type.lower())
+            activity_func = activity_type_map.get(activity_type.lower())
+
+            if not status:
+                await ctx.send("Estado inválido. Usa: online, idle, dnd, offline.")
+                return
+            if not activity_func:
+                await ctx.send("Tipo de actividad inválido. Usa: playing, streaming, listening, watching, competing.")
+                return
+
+            activity = activity_func(message)
+            await self.bot.change_presence(status=status, activity=activity)
+
+            await ctx.send(f"Estado cambiado a **{status_type}** con actividad **{activity_type}**: {message}")
+
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
-            await ctx.send(embed=embed)
+            await ctx.send("No tienes permisos para usar este comando.")
+
 
     @commands.command(name="debug")
     async def debug(self, ctx):
@@ -161,7 +223,7 @@ class CreadorCommands(commands.Cog):
             embed = discord.Embed(title="Información de Depuración", description="Información de depuración: OK.", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="forcerestart")
@@ -171,7 +233,7 @@ class CreadorCommands(commands.Cog):
             await ctx.send(embed=embed)
             os.execv(sys.executable, ['python'] + sys.argv)
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="reiniciar")
@@ -181,7 +243,7 @@ class CreadorCommands(commands.Cog):
             await ctx.send(embed=embed)
             await self.bot.close()
         else:
-            embed = discord.Embed(title="Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
+            embed = discord.Embed(title="⛔ Permisos Denegados", description="No tienes permisos para usar este comando.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command(name="ayuda")
